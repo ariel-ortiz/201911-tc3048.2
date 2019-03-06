@@ -1,3 +1,12 @@
+/*
+ * LL(1) Grammar for the Simple Expression Language
+ * 
+ *      Prog  ::= Exp "EOF"
+ *      Exp   ::= Term ("+" Term)*
+ *      Term  ::= Fact ("*" Fact)*
+ *      Fact  ::= "int" | "(" Exp ")"
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -44,6 +53,60 @@ public class Scanner {
             }
         }
         yield return new Token(TokenCategory.EOF, null);
+    }
+}
+
+public class SyntaxError: Exception { }
+
+public class Parser {
+    IEnumerator<Token> tokenStream;
+    public Parser(IEnumerator<Token> tokenStream) {
+        this.tokenStream = tokenStream;
+        this.tokenStream.MoveNext();
+    }
+    public TokenCategory Current {
+        get { return tokenStream.Current.Category; }
+    }
+    public Token Expect(TokenCategory category) {
+        if (Current == category) {
+            Token current = tokenStream.Current;
+            tokenStream.MoveNext();
+            return current;
+        } else {
+            throw new SyntaxError();
+        }
+    }
+    public void Prog() {
+        Exp();
+        Expect(TokenCategory.EOF);
+    }
+    public void Exp() {
+        Term();
+        while (Current == TokenCategory.PLUS) {
+            Expect(TokenCategory.PLUS);
+            Term();
+        }
+    }
+    public void Term() {
+        Fact();
+        while (Current == TokenCategory.TIMES) {
+            Expect(TokenCategory.TIMES);
+            Fact();
+        }
+    }
+    public void Fact() {
+        switch (Current) {
+        case TokenCategory.INT:
+            Expect(TokenCategory.INT);
+            break;
+        case TokenCategory.PAR_OPEN:
+            Expect(TokenCategory.PAR_OPEN);
+            Exp();
+            Expect(TokenCategory.PAR_CLOSED);
+            break;
+        default:
+            throw new SyntaxError();
+        }
     }
 }
 
