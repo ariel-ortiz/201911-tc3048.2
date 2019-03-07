@@ -114,8 +114,12 @@ public class Driver {
     public static void Main() {
         Console.Write("> ");
         var line = Console.ReadLine();
-        foreach (var token in new Scanner(line).Start()) {
-            Console.WriteLine(token);
+        var parser = new Parser(new Scanner(line).Start().GetEnumerator());
+        try {
+            parser.Prog();
+            Console.WriteLine("Synax OK!");
+        } catch (SyntaxError) {
+            Console.WriteLine("Bad syntax!");
         }
     }
 }
