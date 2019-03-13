@@ -80,52 +80,48 @@ public class Parser {
             throw new SyntaxError();
         }
     }
-    public int Prog() {
-        var result = Exp();
+    public void Prog() {
+        Exp();
         Expect(TokenCategory.EOF);
-        return result;
     }
-    public int Exp() {
-        var result = Term();
+    public void Exp() {
+        Term();
         while (Current == TokenCategory.PLUS) {
             Expect(TokenCategory.PLUS);
-            result += Term();
+            Term();
         }
-        return result;
     }
-    public int Term() {
-        var result = Pow();
+    public void Term() {
+        Pow();
         while (Current == TokenCategory.TIMES) {
             Expect(TokenCategory.TIMES);
-            result *= Pow();
+            Pow();
         }
-        return result;
     }
-    public int Pow() {
-        var result = Fact();
+    public void Pow() {
+        Fact();
         if (Current == TokenCategory.POW) {
             Expect(TokenCategory.POW);
-            result = (int) Math.Pow(result, Pow());
+            Pow();
         }
-        return result;
     }
-    public int Fact() {
+    public void Fact() {
         switch (Current) {
         case TokenCategory.INT:
-            var token = Expect(TokenCategory.INT);
-            return Convert.ToInt32(token.Lexeme);
+            Expect(TokenCategory.INT);
+            break;
         case TokenCategory.PAR_OPEN:
             Expect(TokenCategory.PAR_OPEN);
-            var result = Exp();
+            Exp();
             Expect(TokenCategory.PAR_CLOSED);
-            return result;
+            break;
         default:
             throw new SyntaxError();
         }
     }
 }
 
-class Node: IEnumerable<Node> {
+public class Node: IEnumerable<Node> {
 
     IList<Node> children = new List<Node>();
 
@@ -170,14 +166,20 @@ class Node: IEnumerable<Node> {
     }
 }
 
+public class Prog  : Node { }
+public class Plus  : Node { }
+public class Times : Node { }
+public class Pow   : Node { }
+public class Int   : Node { }
+
 public class Driver {
     public static void Main() {
         Console.Write("> ");
         var line = Console.ReadLine();
         var parser = new Parser(new Scanner(line).Start().GetEnumerator());
         try {
-            var result = parser.Prog();
-            Console.WriteLine(result);
+            parser.Prog();
+            Console.WriteLine("Syntax OK");
         } catch (SyntaxError) {
             Console.WriteLine("Bad syntax!");
         }
