@@ -80,41 +80,63 @@ public class Parser {
             throw new SyntaxError();
         }
     }
-    public void Prog() {
-        Exp();
+    public Node Prog() {
+        var n = new Prog() {
+            Exp()  // Add method called automatically
+        };
         Expect(TokenCategory.EOF);
+        return n;
     }
-    public void Exp() {
-        Term();
+    public Node Exp() {
+        var n1 = Term();
         while (Current == TokenCategory.PLUS) {
-            Expect(TokenCategory.PLUS);
-            Term();
+            var n2 = new Plus() {
+                AnchorToken = Expect(TokenCategory.PLUS)
+            };
+            n2.Add(n1);
+            n2.Add(Term());
+            n1 = n2;
         }
+        return n1;
     }
-    public void Term() {
-        Pow();
+    public Node Term() {
+        var n1 = Pow();
         while (Current == TokenCategory.TIMES) {
-            Expect(TokenCategory.TIMES);
-            Pow();
+            var n2 = new Times() {
+                AnchorToken = Expect(TokenCategory.TIMES)
+            };
+            n2.Add(n1);
+            n2.Add(Pow());
+            n1 = n2;
         }
+        return n1;
     }
-    public void Pow() {
-        Fact();
+    public Node Pow() {
+        var n1 = Fact();
         if (Current == TokenCategory.POW) {
-            Expect(TokenCategory.POW);
-            Pow();
+            var n2 = new Pow() {
+                AnchorToken = Expect(TokenCategory.POW)
+            };
+            n2.Add(n1);
+            n2.Add(Pow());
+            n1 = n2;
         }
+        return n1;
     }
-    public void Fact() {
+    public Node Fact() {
         switch (Current) {
+
         case TokenCategory.INT:
-            Expect(TokenCategory.INT);
-            break;
+            return new Int() {
+                AnchorToken = Expect(TokenCategory.INT)
+            };
+
         case TokenCategory.PAR_OPEN:
             Expect(TokenCategory.PAR_OPEN);
-            Exp();
+            var n = Exp();
             Expect(TokenCategory.PAR_CLOSED);
-            break;
+            return n;
+
         default:
             throw new SyntaxError();
         }
@@ -178,8 +200,8 @@ public class Driver {
         var line = Console.ReadLine();
         var parser = new Parser(new Scanner(line).Start().GetEnumerator());
         try {
-            parser.Prog();
-            Console.WriteLine("Syntax OK");
+            var ast = parser.Prog();
+            Console.WriteLine(ast.ToStringTree());
         } catch (SyntaxError) {
             Console.WriteLine("Bad syntax!");
         }
