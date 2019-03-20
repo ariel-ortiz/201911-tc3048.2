@@ -188,11 +188,105 @@ public class Node: IEnumerable<Node> {
     }
 }
 
-public class Prog  : Node { }
-public class Plus  : Node { }
-public class Times : Node { }
-public class Pow   : Node { }
-public class Int   : Node { }
+public class Prog: Node { }
+public class Plus: Node { }
+public class Times: Node { }
+public class Pow: Node { }
+public class Int: Node { }
+
+public class EvalVisitor {
+
+    public int Visit(Prog node) {
+        return Visit((dynamic) node[0]);
+    }
+
+    public int Visit(Plus node) {
+        return Visit((dynamic) node[0])
+            + Visit((dynamic) node[1]);
+    }
+
+    public int Visit(Times node) {
+        return Visit((dynamic) node[0])
+            * Visit((dynamic) node[1]);
+    }
+
+    public int Visit(Pow node) {
+        return (int) Math.Pow(Visit((dynamic) node[0]), 
+            Visit((dynamic) node[1]));
+    }
+
+    public int Visit(Int node) {
+        return Convert.ToInt32(node.AnchorToken.Lexeme);
+    }
+}
+
+public class CVisitor {
+
+    public String Visit(Prog node) {
+        var a = Visit((dynamic) node[0]);
+        return @"
+#include <stdio.h>
+#include <math.h>
+
+int main(void) {
+    printf(""%i\n"", " + a + @");
+    return 0;
+}";
+    }
+
+    public String Visit(Plus node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"({a}+{b})";
+    }
+
+    public String Visit(Times node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"({a}*{b})";
+    }
+
+    public String Visit(Pow node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"((int) pow({a}, {b}))";
+    }
+
+    public String Visit(Int node) {
+        return node.AnchorToken.Lexeme;
+    }
+}
+
+public class LispVisitor {
+
+    public String Visit(Prog node) {
+        return @"
+(require '[clojure.math.numeric-tower :refer [expt]])
+" + Visit((dynamic) node[0]);
+    }
+
+    public String Visit(Plus node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"(+ {a} {b})";
+    }
+
+    public String Visit(Times node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"(* {a} {b})";
+    }
+
+    public String Visit(Pow node) {
+        var a = Visit((dynamic) node[0]);
+        var b = Visit((dynamic) node[1]);
+        return $"(expt {a} {b})";
+    }
+
+    public String Visit(Int node) {
+        return node.AnchorToken.Lexeme;
+    }
+}
 
 public class Driver {
     public static void Main() {
@@ -201,7 +295,9 @@ public class Driver {
         var parser = new Parser(new Scanner(line).Start().GetEnumerator());
         try {
             var ast = parser.Prog();
-            Console.WriteLine(ast.ToStringTree());
+            // Console.WriteLine(ast.ToStringTree());
+            var result = new LispVisitor().Visit((dynamic) ast);
+            Console.WriteLine(result);
         } catch (SyntaxError) {
             Console.WriteLine("Bad syntax!");
         }
