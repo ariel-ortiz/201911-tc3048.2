@@ -9,6 +9,7 @@
 
 void yyerror(char *s, ...);
 extern int yylineno;
+int yylex(void);
 
 %}
 
@@ -24,8 +25,18 @@ calclist:
 
 exp:
     INTEGER /* default $$ = $1 */
-    | PAR_LEFT ADD exp exp PAR_RIGHT { $$ = $3 + $4; }
-    | PAR_LEFT MUL exp exp PAR_RIGHT { $$ = $3 * $4; }
+    | PAR_LEFT ADD addlist PAR_RIGHT { $$ = $3; }
+    | PAR_LEFT MUL mullist PAR_RIGHT { $$ = $3; }
+;
+
+addlist:
+    /* empty */   { $$ = 0; }
+    | addlist exp { $$ = $1 + $2; }
+;
+
+mullist:
+    /* empty */   { $$ = 1; }
+    | mullist exp { $$ = $1 * $2; }
 ;
 
 %%
